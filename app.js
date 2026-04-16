@@ -7,6 +7,7 @@ const downloadBtn = document.getElementById("download-json");
 
 let latestResult = null;
 const TRUSTED_LEAGUE_HOSTS = new Set(["champs.leagueos.gg"]);
+const BLOB_CLEANUP_DELAY_MS = 100;
 
 const normalizeWhitespace = (value) => value.replace(/\s+/g, " ").trim();
 
@@ -208,7 +209,7 @@ function downloadLatestJson() {
   setTimeout(() => {
     a.remove();
     URL.revokeObjectURL(url);
-  }, 100);
+  }, BLOB_CLEANUP_DELAY_MS);
 }
 
 document.getElementById("scrape-url").addEventListener("click", scrapeFromUrl);
