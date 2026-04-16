@@ -9,10 +9,6 @@ let latestResult = null;
 
 const getText = (value) => value.replace(/\s+/g, " ").trim();
 
-function parseHtmlString(html) {
-  return html;
-}
-
 function stripTags(html) {
   return getText(html.replace(/<[^>]*>/g, " "));
 }
@@ -75,7 +71,7 @@ function extractSections(html) {
 }
 
 function scrapeLeagueDataFromHtml(html) {
-  const doc = parseHtmlString(html);
+  const doc = html;
   const pageTitle = stripTags((doc.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || "");
   return {
     scrapedAt: new Date().toISOString(),
@@ -85,6 +81,12 @@ function scrapeLeagueDataFromHtml(html) {
     lists: extractLists(doc),
     keyValuePairs: extractKeyValuePairs(doc),
   };
+}
+
+function requestOptionsForUrl(url) {
+  const isSameOrigin = url.origin === window.location.origin;
+  const isLeagueOsDomain = url.hostname === "leagueos.gg" || url.hostname.endsWith(".leagueos.gg");
+  return isSameOrigin || isLeagueOsDomain ? { credentials: "include" } : {};
 }
 
 function updateResult(data) {
@@ -108,7 +110,8 @@ async function scrapeFromUrl() {
   updateStatus("Fetching dashboard HTML...");
 
   try {
-    const response = await fetch(url, { credentials: "include" });
+    const parsedUrl = new URL(url);
+    const response = await fetch(parsedUrl, requestOptionsForUrl(parsedUrl));
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }

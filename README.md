@@ -8,7 +8,7 @@ Open `index.html` in a browser.
 
 ## How to use
 
-1. Log into your former league admin dashboard in that same browser.
+1. Log into your league admin dashboard in that same browser.
 2. Start with `https://champs.leagueos.gg/` (or your exact admin page URL) in the URL field.
 3. In the app, either:
    - enter the dashboard URL and click **Scrape URL**, or
