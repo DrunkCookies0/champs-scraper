@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>League Admin Dashboard Scraper</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>League Admin Dashboard Scraper</h1>
+      <p>
+        Log into your league admin dashboard in this browser, then scrape by URL, file,
+        or pasted HTML.
+      </p>
+
+      <section class="panel">
+        <label for="dashboard-url">Dashboard URL</label>
+        <div class="row">
+          <input id="dashboard-url" type="url" value="https://champs.leagueos.gg/" placeholder="https://champs.leagueos.gg/" />
+          <button id="scrape-url" type="button">Scrape URL</button>
+        </div>
+
+        <label for="dashboard-file">Dashboard HTML file (optional)</label>
+        <input id="dashboard-file" type="file" accept=".html,text/html" />
+
+        <label for="dashboard-html">Or paste dashboard HTML</label>
+        <textarea id="dashboard-html" rows="10" placeholder="Paste full HTML source here..."></textarea>
+
+        <div class="row">
+          <button id="scrape-html" type="button">Scrape Pasted HTML</button>
+          <button id="download-json" type="button" disabled>Download JSON</button>
+        </div>
+
+        <p id="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="panel">
+        <h2 id="result-label">Scraped League Data</h2>
+        <textarea id="result" rows="16" readonly aria-labelledby="result-label"></textarea>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
