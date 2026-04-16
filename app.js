@@ -7,10 +7,10 @@ const downloadBtn = document.getElementById("download-json");
 
 let latestResult = null;
 
-const getText = (value) => value.replace(/\s+/g, " ").trim();
+const normalizeWhitespace = (value) => value.replace(/\s+/g, " ").trim();
 
 function stripTags(html) {
-  return getText(html.replace(/<[^>]*>/g, " "));
+  return normalizeWhitespace(html.replace(/<[^>]*>/g, " "));
 }
 
 function extractMatches(pattern, html) {
@@ -84,7 +84,8 @@ function scrapeLeagueDataFromHtml(html) {
 }
 
 function requestOptionsForUrl(url) {
-  const isSameOrigin = url.origin === window.location.origin;
+  const appOrigin = window.location.origin;
+  const isSameOrigin = appOrigin !== "null" && url.origin === appOrigin;
   const isLeagueOsDomain = url.hostname === "leagueos.gg" || url.hostname.endsWith(".leagueos.gg");
   return isSameOrigin || isLeagueOsDomain ? { credentials: "include" } : {};
 }
@@ -113,7 +114,7 @@ async function scrapeFromUrl() {
     const parsedUrl = new URL(url);
     const response = await fetch(parsedUrl, requestOptionsForUrl(parsedUrl));
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(`HTTP ${response.status} ${response.statusText}`);
     }
 
     const html = await response.text();
@@ -154,9 +155,10 @@ function downloadLatestJson() {
 
   const blob = new Blob([JSON.stringify(latestResult, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
+  const date = new Date().toISOString().slice(0, 10);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "league-data.json";
+  a.download = `league-data-${date}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
