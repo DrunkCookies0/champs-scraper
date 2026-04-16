@@ -36,7 +36,7 @@ function removeTagBlockContents(html, tagName) {
       continue;
     }
 
-    const closeEnd = lowerHtml.indexOf(">", closeIndex + closeTag.length);
+    const closeEnd = lowerHtml.indexOf(">", closeIndex);
     if (closeEnd === -1) {
       cursor = html.length;
       break;
