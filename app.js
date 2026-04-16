@@ -6,6 +6,7 @@ const fileEl = document.getElementById("dashboard-file");
 const downloadBtn = document.getElementById("download-json");
 
 let latestResult = null;
+const TRUSTED_LEAGUE_HOSTS = new Set(["champs.leagueos.gg"]);
 
 const normalizeWhitespace = (value) => value.replace(/\s+/g, " ").trim();
 
@@ -126,8 +127,7 @@ function scrapeLeagueDataFromHtml(html) {
 function requestOptionsForUrl(url) {
   const appOrigin = window.location.origin;
   const isSameOrigin = appOrigin !== "null" && url.origin === appOrigin;
-  const trustedLeagueHosts = new Set(["champs.leagueos.gg"]);
-  return isSameOrigin || trustedLeagueHosts.has(url.hostname) ? { credentials: "include" } : {};
+  return isSameOrigin || TRUSTED_LEAGUE_HOSTS.has(url.hostname) ? { credentials: "include" } : {};
 }
 
 function updateResult(data) {
