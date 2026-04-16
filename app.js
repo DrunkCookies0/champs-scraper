@@ -11,8 +11,8 @@ const normalizeWhitespace = (value) => value.replace(/\s+/g, " ").trim();
 
 function stripTags(html) {
   const withoutScriptAndStyle = html
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ");
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, " ");
   return normalizeWhitespace(withoutScriptAndStyle.replace(/<[^>]*>/g, " "));
 }
 
@@ -171,7 +171,7 @@ function downloadLatestJson() {
   setTimeout(() => {
     a.remove();
     URL.revokeObjectURL(url);
-  }, 0);
+  }, 100);
 }
 
 document.getElementById("scrape-url").addEventListener("click", scrapeFromUrl);
