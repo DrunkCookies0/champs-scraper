@@ -10,8 +10,13 @@ let latestResult = null;
 const getText = (value) => value.replace(/\s+/g, " ").trim();
 
 function parseHtmlString(html) {
+  const sanitizedHtml = html
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+    .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, "")
+    .replace(/\son\w+="[^"]*"/gi, "")
+    .replace(/\son\w+='[^']*'/gi, "");
   const parser = new DOMParser();
-  return parser.parseFromString(html, "text/html");
+  return parser.parseFromString(sanitizedHtml, "text/html");
 }
 
 function extractTables(doc) {

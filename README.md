@@ -4,7 +4,7 @@ Browser-based app to scrape league data from an admin dashboard page.
 
 ## Run
 
-Open `/home/runner/work/champs-scraper/champs-scraper/index.html` in a browser.
+Open `index.html` in a browser.
 
 ## How to use
 
