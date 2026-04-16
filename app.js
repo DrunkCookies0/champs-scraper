@@ -9,10 +9,47 @@ let latestResult = null;
 
 const normalizeWhitespace = (value) => value.replace(/\s+/g, " ").trim();
 
+function removeTagBlockContents(html, tagName) {
+  const lowerHtml = html.toLowerCase();
+  const openTag = `<${tagName}`;
+  const closeTag = `</${tagName}`;
+  let cursor = 0;
+  let output = "";
+
+  while (cursor < html.length) {
+    const openIndex = lowerHtml.indexOf(openTag, cursor);
+    if (openIndex === -1) {
+      output += html.slice(cursor);
+      break;
+    }
+
+    output += html.slice(cursor, openIndex);
+    const openEnd = lowerHtml.indexOf(">", openIndex);
+    if (openEnd === -1) {
+      break;
+    }
+
+    const closeIndex = lowerHtml.indexOf(closeTag, openEnd + 1);
+    if (closeIndex === -1) {
+      cursor = openEnd + 1;
+      continue;
+    }
+
+    const closeEnd = lowerHtml.indexOf(">", closeIndex + closeTag.length);
+    if (closeEnd === -1) {
+      cursor = html.length;
+      break;
+    }
+
+    cursor = closeEnd + 1;
+  }
+
+  return output;
+}
+
 function stripTags(html) {
-  const withoutScriptAndStyle = html
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, " ")
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, " ");
+  const withoutScript = removeTagBlockContents(html, "script");
+  const withoutScriptAndStyle = removeTagBlockContents(withoutScript, "style");
   return normalizeWhitespace(withoutScriptAndStyle.replace(/<[^>]*>/g, " "));
 }
 
@@ -116,7 +153,7 @@ async function scrapeFromUrl() {
   try {
     const parsedUrl = new URL(url);
     if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-      updateStatus("Only http:// and https:// dashboard URLs are supported.", true);
+      updateStatus("Only http:// and https:// URLs are supported.", true);
       return;
     }
     const response = await fetch(parsedUrl, requestOptionsForUrl(parsedUrl));
