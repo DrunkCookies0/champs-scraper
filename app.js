@@ -10,7 +10,10 @@ let latestResult = null;
 const normalizeWhitespace = (value) => value.replace(/\s+/g, " ").trim();
 
 function stripTags(html) {
-  return normalizeWhitespace(html.replace(/<[^>]*>/g, " "));
+  const withoutScriptAndStyle = html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ");
+  return normalizeWhitespace(withoutScriptAndStyle.replace(/<[^>]*>/g, " "));
 }
 
 function extractMatches(pattern, html) {
@@ -86,8 +89,8 @@ function scrapeLeagueDataFromHtml(html) {
 function requestOptionsForUrl(url) {
   const appOrigin = window.location.origin;
   const isSameOrigin = appOrigin !== "null" && url.origin === appOrigin;
-  const isLeagueOsDomain = url.hostname === "leagueos.gg" || url.hostname.endsWith(".leagueos.gg");
-  return isSameOrigin || isLeagueOsDomain ? { credentials: "include" } : {};
+  const trustedLeagueHosts = new Set(["champs.leagueos.gg"]);
+  return isSameOrigin || trustedLeagueHosts.has(url.hostname) ? { credentials: "include" } : {};
 }
 
 function updateResult(data) {
@@ -112,6 +115,10 @@ async function scrapeFromUrl() {
 
   try {
     const parsedUrl = new URL(url);
+    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+      updateStatus("Only http:// and https:// dashboard URLs are supported.", true);
+      return;
+    }
     const response = await fetch(parsedUrl, requestOptionsForUrl(parsedUrl));
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} ${response.statusText}`);
@@ -161,8 +168,10 @@ function downloadLatestJson() {
   a.download = `league-data-${date}.json`;
   document.body.appendChild(a);
   a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 0);
 }
 
 document.getElementById("scrape-url").addEventListener("click", scrapeFromUrl);
