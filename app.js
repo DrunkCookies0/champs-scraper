@@ -157,7 +157,7 @@ function downloadLatestJson() {
   const a = document.createElement("a");
   a.href = url;
   a.download = "league-data.json";
-  document.body.append(a);
+  document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
