@@ -10,86 +10,76 @@ let latestResult = null;
 const getText = (value) => value.replace(/\s+/g, " ").trim();
 
 function parseHtmlString(html) {
-  const sanitizedHtml = html
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
-    .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, "")
-    .replace(/\son\w+="[^"]*"/gi, "")
-    .replace(/\son\w+='[^']*'/gi, "");
-  const parser = new DOMParser();
-  return parser.parseFromString(sanitizedHtml, "text/html");
+  return html;
 }
 
-function extractTables(doc) {
-  return Array.from(doc.querySelectorAll("table")).map((table, index) => {
-    const headers = Array.from(table.querySelectorAll("thead th, tr th")).map((th) => getText(th.textContent || ""));
-    const rows = Array.from(table.querySelectorAll("tbody tr, tr"))
-      .map((tr) => Array.from(tr.querySelectorAll("td")).map((td) => getText(td.textContent || "")))
+function stripTags(html) {
+  return getText(html.replace(/<[^>]*>/g, " "));
+}
+
+function extractMatches(pattern, html) {
+  return Array.from(html.matchAll(pattern));
+}
+
+function extractTables(html) {
+  return extractMatches(/<table[\s\S]*?<\/table>/gi, html).map((tableMatch, index) => {
+    const tableHtml = tableMatch[0];
+    const caption = stripTags((tableHtml.match(/<caption[^>]*>([\s\S]*?)<\/caption>/i) || [])[1] || "");
+    const headers = extractMatches(/<th[^>]*>([\s\S]*?)<\/th>/gi, tableHtml).map((match) => stripTags(match[1]));
+    const rows = extractMatches(/<tr[^>]*>([\s\S]*?)<\/tr>/gi, tableHtml)
+      .map((rowMatch) => extractMatches(/<td[^>]*>([\s\S]*?)<\/td>/gi, rowMatch[1]).map((cell) => stripTags(cell[1])))
       .filter((cells) => cells.length > 0);
 
     return {
       tableIndex: index,
-      caption: getText(table.querySelector("caption")?.textContent || ""),
+      caption,
       headers,
       rows,
     };
   });
 }
 
-function extractLists(doc) {
-  return Array.from(doc.querySelectorAll("ul, ol")).map((list, index) => ({
+function extractLists(html) {
+  return extractMatches(/<(ul|ol)[^>]*>([\s\S]*?)<\/\1>/gi, html).map((listMatch, index) => ({
     listIndex: index,
-    type: list.tagName.toLowerCase(),
-    items: Array.from(list.querySelectorAll(":scope > li")).map((li) => getText(li.textContent || "")),
+    type: listMatch[1].toLowerCase(),
+    items: extractMatches(/<li[^>]*>([\s\S]*?)<\/li>/gi, listMatch[2]).map((item) => stripTags(item[1])),
   }));
 }
 
-function extractKeyValuePairs(doc) {
-  const pairs = [];
+function extractKeyValuePairs(html) {
+  const fromRows = extractMatches(/<tr[^>]*>([\s\S]*?)<\/tr>/gi, html)
+    .map((rowMatch) =>
+      extractMatches(/<(?:th|td)[^>]*>([\s\S]*?)<\/(?:th|td)>/gi, rowMatch[1]).map((cell) => stripTags(cell[1])),
+    )
+    .filter((cells) => cells.length === 2 && cells[0] && cells[1])
+    .map((cells) => ({ key: cells[0], value: cells[1] }));
 
-  for (const row of doc.querySelectorAll("tr")) {
-    const cells = Array.from(row.querySelectorAll("th, td")).map((cell) => getText(cell.textContent || ""));
-    if (cells.length === 2 && cells[0] && cells[1]) {
-      pairs.push({ key: cells[0], value: cells[1] });
-    }
-  }
+  const dtMatches = extractMatches(/<dt[^>]*>([\s\S]*?)<\/dt>\s*<dd[^>]*>([\s\S]*?)<\/dd>/gi, html)
+    .map((match) => ({ key: stripTags(match[1]), value: stripTags(match[2]) }))
+    .filter((pair) => pair.key && pair.value);
 
-  for (const item of doc.querySelectorAll("dt")) {
-    const value = item.nextElementSibling?.tagName.toLowerCase() === "dd" ? getText(item.nextElementSibling.textContent || "") : "";
-    const key = getText(item.textContent || "");
-    if (key && value) {
-      pairs.push({ key, value });
-    }
-  }
-
-  return pairs;
+  return [...fromRows, ...dtMatches];
 }
 
-function extractSections(doc) {
-  return Array.from(doc.querySelectorAll("h1, h2, h3")).map((heading) => {
-    const sectionTexts = [];
-    let cursor = heading.nextElementSibling;
+function extractSections(html) {
+  return extractMatches(/<(h[1-3])[^>]*>([\s\S]*?)<\/\1>/gi, html).map((headingMatch, index, allMatches) => {
+    const heading = stripTags(headingMatch[2]);
+    const start = headingMatch.index + headingMatch[0].length;
+    const nextStart = index < allMatches.length - 1 ? allMatches[index + 1].index : html.length;
+    const sectionBody = html.slice(start, nextStart);
+    const content = [stripTags(sectionBody)].filter(Boolean);
 
-    while (cursor && !/^H[1-3]$/.test(cursor.tagName)) {
-      const text = getText(cursor.textContent || "");
-      if (text) {
-        sectionTexts.push(text);
-      }
-      cursor = cursor.nextElementSibling;
-    }
-
-    return {
-      heading: getText(heading.textContent || ""),
-      content: sectionTexts,
-    };
+    return { heading, content };
   });
 }
 
 function scrapeLeagueDataFromHtml(html) {
   const doc = parseHtmlString(html);
+  const pageTitle = stripTags((doc.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || "");
   return {
     scrapedAt: new Date().toISOString(),
-    pageTitle: getText(doc.title || ""),
-    url: doc.URL,
+    pageTitle,
     sections: extractSections(doc),
     tables: extractTables(doc),
     lists: extractLists(doc),
